@@ -13,9 +13,10 @@ from tenacity import (
 class StructuredAgent:
     def __init__(
         self, 
-        name: str, 
-        llm: Any, 
+        name: str,
         instruction: str, 
+        llm: Optional[Any] = None, 
+        model_name: Optional[str] = "google_genai:gemini-2.0-flash",
         description: Optional[str] = None, 
         prompt_defaults: Optional[dict] = None,
         post_processor: Optional[Callable] = None, 
@@ -26,7 +27,11 @@ class StructuredAgent:
     ):
         self.logger = logger or logging.getLogger(__name__)
         self.name = name
-        self.llm = llm
+
+        if llm is None:
+            from langchain.chat_models import init_chat_model
+            llm = init_chat_model(model_name)
+            self.llm = llm
         
         # Setup Jinja2
         self.jinja2_env = jinja2_env or jinja2.Environment(
