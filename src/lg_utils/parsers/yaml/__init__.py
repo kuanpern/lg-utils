@@ -28,7 +28,7 @@ def extract_yaml_content(text: str) -> str:
     return text.strip()
 
 # New implementation of yaml content extractor
-from yaml_utils import YAMLExtractor
+from lg_utils.parsers.yaml.utils import YAMLExtractor
 extract_yaml_content = YAMLExtractor()
 
 

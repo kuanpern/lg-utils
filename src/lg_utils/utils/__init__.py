@@ -3,7 +3,7 @@ import glob
 import inspect
 from typing import Dict, Any, Optional, Callable
 
-def recusvie_load_files(
+def recursive_load_files(
     file_extensions: list[str],
     parser: Optional[Callable[[str], Any]] = None,
     root_dir: Optional[str] = None
