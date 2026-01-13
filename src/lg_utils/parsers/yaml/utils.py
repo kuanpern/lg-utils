@@ -38,36 +38,41 @@ def extract_yaml_segments(text: str, remove_markdown: bool = False) -> List[Dict
     Extracts all valid YAML segments from a given text string.
     Handles YAML in markdown-style code blocks and standalone YAML.
     """
-    # Pattern looks for newlines around the content.
     pattern_in_backticks = r'```(?:yaml|YAML)?\n((?:(?!\n```)[\s\S])*?)\n```'
     
     potential_segments = []
     
-    # 1. Extract YAML from backticked blocks
+    # 1. Extract YAML from backticked blocks (Best Practice)
     matches_in_backticks = list(re.finditer(pattern_in_backticks, text, re.DOTALL))
     for match in matches_in_backticks:
         segment_content = match.group(1).strip()
         if segment_content:
             potential_segments.append(segment_content)
 
-    # 2. Remove backticked blocks from text to avoid re-matching standalone YAML
-    # Iterate in reverse to avoid index issues after removal
+    # 2. Remove backticked blocks from text
     text_stripped = text
     for match in reversed(matches_in_backticks):
         text_stripped = text_stripped[:match.start()] + text_stripped[match.end():]
+    
+    text_stripped = text_stripped.strip()
 
-    # 3. Extract standalone YAML (split by double newline)
-    standalone_blocks = re.split(r'\n\s*\n', text_stripped)
-    for block in standalone_blocks:
-        stripped_block = block.strip()
-        # Basic heuristic: ignore blocks that don't look like key-value pairs to reduce noise
-        if stripped_block and ":" in stripped_block:
-            potential_segments.append(stripped_block)
+    # 3. Handle Standalone YAML (The Fix)
+    # Don't split by double newlines (\n\n). Only split by valid YAML document separators (---).
+    if text_stripped:
+        # Check for standard YAML multi-document separators
+        if re.search(r'^---$', text_stripped, re.MULTILINE):
+            # Split by document separator
+            standalone_blocks = re.split(r'^---$', text_stripped, flags=re.MULTILINE)
+        else:
+            # Treat the remaining text as a single potential YAML block
+            standalone_blocks = [text_stripped]
+            
+        for block in standalone_blocks:
+            stripped_block = block.strip()
+            if stripped_block: 
+                potential_segments.append(stripped_block)
 
     valid_segments = []
-    # FIX: Removed 'seen_segments' deduplication logic.
-    # If the user has two identical config blocks, we want to preserve order
-    # so that strategy="last" works correctly.
     for segment in potential_segments:
         processed_segment = segment
         if remove_markdown:
