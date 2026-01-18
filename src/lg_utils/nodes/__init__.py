@@ -12,8 +12,8 @@ def generic_node_factory(agent, key_mapping: dict[str, str] = None):
         A node function suitable for use in a LangGraph StateGraph.
     """
 
-    def node(state):
-        output = agent(state)
+    def node(state, config):
+        output = agent(state, config)
         if key_mapping is not None:
             updates = {key_mapping[k]: v for k, v in output.items() if k in key_mapping}
         else:
