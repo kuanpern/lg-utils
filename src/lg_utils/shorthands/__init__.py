@@ -22,8 +22,28 @@ class ChatModelManager:
             return chat_model
 
         assert model_name in self._supported_models, f"{model_name} is not supported."
-        default_kwargs = self._configs.get(model_name)
+        default_kwargs = dict(self._configs.get(model_name, {}))
         combined_kwargs = {"model": "default", **default_kwargs, **kwargs}
-        chat_model = init_chat_model(**combined_kwargs)
+
+        base_urls = combined_kwargs.pop("base_url", None)
+        if isinstance(base_urls, list):
+            if not base_urls:
+                raise ValueError("base_url list cannot be empty")
+
+            models = []
+            for url in base_urls:
+                model_kwargs = {**combined_kwargs, "base_url": url}
+                models.append(init_chat_model(**model_kwargs))
+
+            primary_model = models[0]
+            if len(models) > 1:
+                chat_model = primary_model.with_fallbacks(models[1:])
+            else:
+                chat_model = primary_model
+        else:
+            if base_urls is not None:
+                combined_kwargs["base_url"] = base_urls
+            chat_model = init_chat_model(**combined_kwargs)
+
         self._chat_models[model_name] = chat_model
         return chat_model
